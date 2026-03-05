@@ -1,0 +1,59 @@
+import tensorflow as tf
+import numpy as np
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+
+# Training pairs (expand this for better chatbot behavior)
+train_texts = [
+    "hello", "hi", "hey",
+    "what is your name", "who are you",
+    "bye", "goodbye",
+    "thanks", "thank you"
+]
+
+train_labels = [
+    "greet","greet","greet",
+    "identity","identity",
+    "bye","bye",
+    "thanks","thanks"
+]
+
+responses = {
+    "greet": "Hello! How can I help you?",
+    "identity": "I am an NLP chatbot prototype built using an RNN model.",
+    "bye": "Goodbye! See you next time.",
+    "thanks": "You're welcome!"
+}
+
+label_to_id = {lab:i for i, lab in enumerate(sorted(set(train_labels)))}
+id_to_label = {i:lab for lab,i in label_to_id.items()}
+y = np.array([label_to_id[l] for l in train_labels])
+
+tokenizer = Tokenizer(num_words=2000, oov_token="<OOV>")
+tokenizer.fit_on_texts(train_texts)
+seqs = tokenizer.texts_to_sequences(train_texts)
+X = pad_sequences(seqs, maxlen=6, padding="post")
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Embedding(input_dim=2000, output_dim=16, input_length=6),
+    tf.keras.layers.SimpleRNN(32, activation="tanh"),
+    tf.keras.layers.Dense(len(label_to_id), activation="softmax")
+])
+
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+model.fit(X, y, epochs=50, verbose=0)
+
+def bot_reply(text: str) -> str:
+    s = tokenizer.texts_to_sequences([text])
+    s = pad_sequences(s, maxlen=6, padding="post")
+    probs = model.predict(s, verbose=0)[0]
+    pred_id = int(np.argmax(probs))
+    intent = id_to_label[pred_id]
+    return responses[intent]
+
+# Demo
+while True:
+    msg = input("You: ")
+    if msg.lower() in ("exit", "quit"):
+        break
+    print("Bot:", bot_reply(msg))
