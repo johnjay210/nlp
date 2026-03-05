@@ -1,0 +1,26 @@
+from nltk.translate.bleu_score import sentence_bleu, corpus_bleu, SmoothingFunction
+
+smooth = SmoothingFunction().method1
+
+# References: list of reference translations (tokenized)
+references = [
+    [["bonjour", "comment", "ça", "va"]],
+    [["je", "vous", "remercie"]],
+    [["bon", "matin"]]
+]
+
+# Candidates: model outputs (tokenized)
+candidates = [
+    ["bonjour", "comment", "ça", "va"],
+    ["merci", "beaucoup"],
+    ["bon", "matin"]
+]
+
+# Sentence BLEU
+for i in range(len(candidates)):
+    score = sentence_bleu(references[i], candidates[i], smoothing_function=smooth)
+    print(f"Sentence {i+1} BLEU:", score)
+
+# Corpus BLEU
+corpus_score = corpus_bleu(references, candidates, smoothing_function=smooth)
+print("Corpus BLEU:", corpus_score)
